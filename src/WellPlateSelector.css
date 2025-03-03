@@ -1,0 +1,142 @@
+.well-plate-container {
+  text-align: center;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  max-width: 1000px;
+  margin: auto;
+}
+
+.plate-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.plate-edit {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+
+}
+
+.plate-nav span {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.field-toggle {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 15px;
+}
+
+.field-btn {
+  padding: 8px 12px;
+  margin: 5px;
+  border: none;
+  background-color: #555;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.field-btn.active {
+  background-color: #007bff;
+}
+
+.metadata-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* ✅ Centers the input box horizontally */
+  justify-content: center;
+  margin-top: 15px;
+  width: 100%;
+}
+
+.metadata-input {
+  width: 60%;  /* Adjust width as needed */
+  max-width: 500px;  /* Prevents it from getting too wide */
+  font-size: 18px;
+  padding: 12px;
+  border: 2px solid #555;
+  border-radius: 5px;
+  text-align: center;
+  display: block;
+  margin: 10px auto; /* ✅ Centers it */
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.action-btn {
+  background-color: #7b2626;
+  color: white;
+  margin: 5px;
+  padding: 12px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 120px;
+}
+
+.action-btn:hover {
+  background-color: #5a1c1c;
+}
+
+.file-upload {
+  display: block;
+  margin: 15px auto;
+  text-align: center;
+}
+
+.well-plate {
+  display: grid;
+  grid-template-columns: repeat(12, 75px);
+  grid-template-rows: repeat(8, 75px);
+  gap: 4px;
+  justify-content: center;
+  margin: auto;
+  padding-top: 20px;
+}
+
+.well-info {
+  font-size: 12px;
+}
+
+.well {
+  width: 75px;
+  height: 75px;
+  border: 1px solid #555;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  font-size: 18px;
+  text-align: center;
+}
+
+.well.selected {
+  background-color: #474747 !important;
+  color: white;
+}
+
+.selection-box {
+  border: 2px dashed #007bff;
+  background: rgba(0, 123, 255, 0.1);
+  position: absolute;
+  z-index: 10;
+}
