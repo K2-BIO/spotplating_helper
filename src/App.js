@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { SelectableGroup, createSelectable } from "react-selectable-fast";
 import { saveAs } from "file-saver";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import Papa from "papaparse";
 import "./WellPlateSelector.css";
+import JSZip from "jszip";
+
 
 // Default metadata fields
 const DEFAULT_METADATA = {
@@ -405,6 +409,84 @@ const WellPlateSelector = () => {
     deselectAll();
   };
 
+  const exportPDF = async () => {
+    const zip = new JSZip(); // ✅ Create ZIP file
+    const originalPlateIndex = currentPlateIndex; // ✅ Store original plate index
+  
+    for (const plateIndex in plates) {
+      setCurrentPlateIndex(parseInt(plateIndex)); // ✅ Switch to current plate
+      await new Promise((resolve) => setTimeout(resolve, 50)); // ✅ Allow UI update
+  
+      const pdf = new jsPDF("p", "mm", "a4"); // ✅ Create a new PDF
+      let yOffset = 15; // ✅ Reset Y-position
+  
+      for (const field of Object.keys(DEFAULT_METADATA)) {
+        setDisplayedField(field); // ✅ Change displayed field dynamically
+        await new Promise((resolve) => setTimeout(resolve, 50)); // ✅ Allow UI update
+  
+        const plateElement = document.querySelector(".well-plate");
+        if (!plateElement) {
+          console.warn(`Plate element not found for ${field}`);
+          continue;
+        }
+  
+        // ✅ Temporarily expand the plate to avoid cropping
+        plateElement.style.width = "1000px";
+        plateElement.style.overflow = "visible";
+  
+        // ✅ Capture the well plate as an image
+        const canvas = await html2canvas(plateElement, {
+          scale: 2,
+          width: plateElement.scrollWidth + 500,
+          height: plateElement.scrollHeight + 100,
+          useCORS: true,
+        });
+  
+        // ✅ Reset styles after capture
+        plateElement.style.width = "";
+        plateElement.style.overflow = "";
+  
+        const imgData = canvas.toDataURL("image/jpeg", 0.7); // ✅ Convert to JPEG with compression
+  
+        // ✅ Get image dimensions
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+  
+        // ✅ Define PDF dimensions
+        const maxWidth = 170; // ✅ Ensure proper fit
+        const aspectRatio = imgHeight / imgWidth;
+        const displayHeight = maxWidth * aspectRatio;
+  
+        // ✅ Add metadata title
+        pdf.setFontSize(14);
+        pdf.text(`Plate ${plates[plateIndex].id} - ${field}`, 10, yOffset);
+  
+        // ✅ Add image to PDF
+        pdf.addImage(imgData, "JPEG", 10, yOffset + 5, maxWidth, displayHeight);
+        yOffset += displayHeight + 15;
+  
+        // ✅ Add new page if necessary
+        if (yOffset > 200) {
+          pdf.addPage();
+          yOffset = 15;
+        }
+      }
+  
+      // ✅ Convert PDF to Blob and add it to ZIP
+      const pdfBlob = pdf.output("blob");
+      zip.file(`plate_${plates[plateIndex].id}_metadata.pdf`, pdfBlob);
+    }
+  
+    // ✅ Restore original plate index
+    setCurrentPlateIndex(originalPlateIndex);
+  
+    // ✅ Generate ZIP file and trigger download
+    zip.generateAsync({ type: "blob" }).then((zipBlob) => {
+      saveAs(zipBlob, "plate_metadata.zip");
+    });
+  };
+
+
   return (
     <div className="well-plate-container">
       <h2>96-Well Block Metadata Helper</h2>
@@ -460,9 +542,8 @@ const WellPlateSelector = () => {
         <button className="action-btn" onClick={clearField}>Clear</button>
         <button className="action-btn" onClick={deselectAll}>Deselect All</button>
         <button className="action-btn" onClick={searchStrainByNumber}>Search Strain</button>
-        <button className="action-btn" onClick={exportCSV}>
-          Export CSV
-        </button>
+        <button className="action-btn" onClick={exportCSV}>Export CSV</button>
+        <button className="action-btn" onClick={exportPDF}>Export PDF</button>
       </div>
 
       <SelectableGroup key={selectionKey} className="well-plate" onSelectionFinish={handleSelection} allowClickWithoutSelected enableDeselect selectboxClassName="selection-box">
