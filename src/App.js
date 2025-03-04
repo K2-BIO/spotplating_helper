@@ -551,6 +551,48 @@ const WellPlateSelector = () => {
     <div className="well-plate-container">
       <h2>96-Well Block Metadata Helper</h2>
 
+      <input
+        type="text"
+        className="form-control metadata-input"
+        placeholder={`Set ${displayedField} for selected wells`}
+        value={bulkValue}
+        onChange={(e) => setBulkValue(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && applyBulkUpdate()}
+      />
+
+      <div className="field-toggle">
+        {Object.keys(DEFAULT_METADATA).map((field) => (
+          <button
+            key={field}
+            className={`field-btn ${displayedField === field ? "active" : ""}`}
+            onClick={() => setDisplayedField(field)}
+          >
+            {field}
+          </button>
+        ))}
+      </div>
+
+      <SelectableGroup key={selectionKey} className="well-plate" onSelectionFinish={handleSelection} allowClickWithoutSelected enableDeselect selectboxClassName="selection-box">
+        {Object.keys(plates[currentPlateIndex].metadata).map((wellId) => (
+          <Well key={wellId} wellId={wellId} isSelected={selectedWells.has(wellId)} metadata={plates[currentPlateIndex].metadata} displayedField={displayedField} />
+        ))}
+      </SelectableGroup>
+
+      <div className="plate-nav">
+        <button className="template-btn" onClick={prevPlate} disabled={currentPlateIndex === 0}>← Previous Plate</button>
+        <span>Block {plates[currentPlateIndex].id}</span>
+        <button className="template-btn" onClick={nextPlate} disabled={currentPlateIndex === plates.length - 1}>Next Plate →</button>        
+      </div>
+
+      <div className="button-container">
+        <button className="template-btn" onClick={clearField}>Clear</button>
+        <button className="template-btn" onClick={deselectAll}>Deselect All</button>
+        <button className="template-btn" onClick={searchStrainByNumber}>Search Strain</button>
+        <button className="template-btn" onClick={exportCSV}>Export CSV</button>
+        <button className="template-btn" onClick={exportPDF}>Export PDF</button>
+      </div>
+
+
       <div className="plate-edit">
         <button className="action-btn" onClick={copyCurrentPlate}>Copy Current Plate</button>
         <button className="action-btn" onClick={addNewPlate}>+ Add Plate</button>
@@ -568,49 +610,6 @@ const WellPlateSelector = () => {
             ))}
           </select>
         </div>
-      </div>
-
-      <div className="field-toggle">
-        {Object.keys(DEFAULT_METADATA).map((field) => (
-          <button
-            key={field}
-            className={`field-btn ${displayedField === field ? "active" : ""}`}
-            onClick={() => setDisplayedField(field)}
-          >
-            {field}
-          </button>
-        ))}
-      </div>
-
-      <input
-        type="text"
-        className="form-control metadata-input"
-        placeholder={`Set ${displayedField} for selected wells`}
-        value={bulkValue}
-        onChange={(e) => setBulkValue(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && applyBulkUpdate()}
-      />
-
-
-      <div className="button-container">
-        <button className="action-btn" onClick={applyBulkUpdate}>Apply</button>
-        <button className="action-btn" onClick={clearField}>Clear</button>
-        <button className="action-btn" onClick={deselectAll}>Deselect All</button>
-        <button className="action-btn" onClick={searchStrainByNumber}>Search Strain</button>
-        <button className="action-btn" onClick={exportCSV}>Export CSV</button>
-        <button className="action-btn" onClick={exportPDF}>Export PDF</button>
-      </div>
-
-      <SelectableGroup key={selectionKey} className="well-plate" onSelectionFinish={handleSelection} allowClickWithoutSelected enableDeselect selectboxClassName="selection-box">
-        {Object.keys(plates[currentPlateIndex].metadata).map((wellId) => (
-          <Well key={wellId} wellId={wellId} isSelected={selectedWells.has(wellId)} metadata={plates[currentPlateIndex].metadata} displayedField={displayedField} />
-        ))}
-      </SelectableGroup>
-
-      <div className="plate-nav">
-        <button className="template-btn" onClick={prevPlate} disabled={currentPlateIndex === 0}>← Previous Plate</button>
-        <span>Block {plates[currentPlateIndex].id}</span>
-        <button className="template-btn" onClick={nextPlate} disabled={currentPlateIndex === plates.length - 1}>Next Plate →</button>        
       </div>
 
       <div className="upload-container">
