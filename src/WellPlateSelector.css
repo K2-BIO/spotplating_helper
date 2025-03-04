@@ -140,3 +140,33 @@
   position: absolute;
   z-index: 10;
 }
+
+.template-btn {
+  background-color: #e3e1e1;
+  color: rgb(0, 0, 0);
+  margin: 5px;
+  padding: 12px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 120px;
+}
+
+.upload-container {
+  display: flex;
+  justify-content: space-between; /* Space them evenly */
+  align-items: center; /* Align items in the center */
+  gap: 20px; /* Space between the boxes */
+  margin-bottom: 20px;
+}
+
+.upload-box {
+  flex: 1; /* Make both boxes take equal space */
+  text-align: center; /* Center align text */
+}
+
+.file-upload {
+  display: block;
+  margin: 10px auto;
+}

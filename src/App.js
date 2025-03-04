@@ -162,44 +162,107 @@ const WellPlateSelector = () => {
     }
   };
 
-  // **Upload CSV File**
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
+  
+    // First, check the first few rows to detect format
     Papa.parse(file, {
-      header: true,
+      preview: 5, // Read first 5 rows to detect format
       skipEmptyLines: true,
       complete: (result) => {
-        const uploadedPlates = {};
-
-        result.data.forEach((row) => {
-          const plateId = parseInt(row["from_block"], 10);
-          const wellId = row.well;
-          if (!plateId || !wellId) return;
-
-          if (!uploadedPlates[plateId]) {
-            uploadedPlates[plateId] = initializePlateMetadata();
-          }
-
-          uploadedPlates[plateId][wellId] = {
-            base_strain: row["base_strain"] || "",
-            receptor: row["receptor"] || "",
-            anchor: row["anchor"] || "",
-            nanobody: row["nanobody"] || "",
-            negsel: row["negsel"] || "",
-            dilution: row["dilution"] || "",
-            notes: row["notes"] || "",
-          };
+        const firstRow = result.data[0];
+        const isOldFormat = firstRow && firstRow.includes("from_block"); // Check for known header
+        console.log(`Detected format: ${isOldFormat ? "Old Format" : "New Format"}`);
+  
+        // Process file again with the correct format
+        Papa.parse(file, {
+          header: isOldFormat, // ✅ Use headers for old format, raw data for new format
+          skipEmptyLines: true,
+          complete: (result) => {
+            let newPlates = [];
+  
+            if (isOldFormat) {
+              // ✅ Process OLD FORMAT (uses headers like "from_block", "well", etc.)
+              const uploadedPlates = {};
+  
+              result.data.forEach((row) => {
+                const plateId = parseInt(row["from_block"], 10);
+                const wellId = row["well"];
+                if (!plateId || !wellId) return;
+  
+                if (!uploadedPlates[plateId]) {
+                  uploadedPlates[plateId] = initializePlateMetadata(); // ✅ Initialize wells
+                }
+  
+                uploadedPlates[plateId][wellId] = {
+                  base_strain: row["base_strain"] || "",
+                  receptor: row["receptor"] || "",
+                  anchor: row["anchor"] || "",
+                  nanobody: row["nanobody"] || "",
+                  negsel: row["negsel"] || "",
+                  dilution: row["dilution"] || "",
+                  notes: row["notes"] || "",
+                };
+              });
+  
+              newPlates = Object.keys(uploadedPlates).map((id) => ({
+                id: parseInt(id, 10),
+                metadata: uploadedPlates[id],
+              }));
+            } else {
+              // ✅ Process NEW FORMAT (plate layout with "Block X")
+              let currentPlate = null;
+              let currentPlateId = null;
+  
+              result.data.forEach((row) => {
+                if (row[0] && row[0].startsWith("Block")) {
+                  // ✅ Start a new plate when "Block X" is found
+                  if (currentPlateId !== null) {
+                    newPlates.push(currentPlate);
+                  }
+  
+                  // Extract plate number from "Block X"
+                  currentPlateId = parseInt(row[0].replace("Block ", ""), 10);
+                  currentPlate = { id: currentPlateId, metadata: initializePlateMetadata() }; // ✅ Ensure all wells exist
+                } else if (currentPlate) {
+                  // ✅ Process well data (rows A-H)
+                  const rowLabel = row[0]; // A, B, C, etc.
+                  if (rowLabel && ["A", "B", "C", "D", "E", "F", "G", "H"].includes(rowLabel)) {
+                    for (let col = 1; col <= 12; col++) {
+                      const wellId = `${rowLabel}${col}`;
+                      const baseStrain = row[col] ? row[col].trim() : "";
+  
+                      // ✅ Always keep the well, even if it's blank
+                      currentPlate.metadata[wellId] = {
+                        ...DEFAULT_METADATA,
+                        base_strain: baseStrain,
+                      };
+                    }
+                  }
+                }
+              });
+  
+              // ✅ Add last plate if it has data
+              if (currentPlate) {
+                newPlates.push(currentPlate);
+              }
+            }
+  
+            // ✅ Remove empty plates (where ALL wells are empty)
+            newPlates = newPlates.filter((plate) =>
+              Object.values(plate.metadata).some(
+                (wellData) => Object.values(wellData).some((val) => val !== "")
+              )
+            );
+  
+            // ✅ Update state if plates exist
+            if (newPlates.length > 0) {
+              setPlates(newPlates);
+              setCurrentPlateIndex(0); // Reset to first plate
+            }
+          },
         });
-
-        const updatedPlates = Object.keys(uploadedPlates).map((id) => ({
-          id: parseInt(id, 10),
-          metadata: uploadedPlates[id],
-        }));
-
-        setPlates(updatedPlates);
-        setCurrentPlateIndex(0);
       },
     });
   };
@@ -284,40 +347,37 @@ const WellPlateSelector = () => {
   
     const csvContent = csvHeader + csvRows.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
-    saveAs(blob, "plate_metadata.csv");
+    saveAs(blob, "spots.csv");
   };
 
   const searchStrainByNumber = () => {
     setPlates((prevPlates) => {
-      const updatedPlates = [...prevPlates];
+      return prevPlates.map((plate) => {
+        const updatedMetadata = { ...plate.metadata };
   
-      // ✅ Loop through all wells in the current plate
-      Object.keys(updatedPlates[currentPlateIndex].metadata).forEach((well) => {
-        const wellMetadata = updatedPlates[currentPlateIndex].metadata[well];
-        const strainNumber = wellMetadata.base_strain || ""; // Assume strain number is stored in base_strain
+        // ✅ Loop through all wells in this plate
+        Object.keys(updatedMetadata).forEach((well) => {
+          const wellMetadata = updatedMetadata[well];
+          const strainNumber = wellMetadata.base_strain || ""; // Assume strain number is stored in base_strain
   
-        if (!strainNumber) {
-          console.warn(`Strain number missing for well: ${well}`);
-          return;
-        }
+          if (!strainNumber) return; // Skip wells without a base strain
   
-        // ✅ Find the row where `Strain_Name` matches `base_strain`
-        const matchingRow = csvData.find((row) => row["Strain_Name"] === strainNumber);
+          // ✅ Find the row where `Strain_Name` matches `base_strain`
+          const matchingRow = csvData.find((row) => row["Strain_Name"] === strainNumber);
   
-        if (matchingRow) {
-          // ✅ Extract corresponding `negsel`, `anchor`, and `receptor` values
-          updatedPlates[currentPlateIndex].metadata[well] = {
-            ...wellMetadata,
-            negsel: matchingRow["Construct_1"] || "",
-            anchor: matchingRow["Construct_2"] || "",
-            receptor: matchingRow["Construct_3"] || "",
-          };
-        } else {
-          console.warn(`No matching strain found for well: ${well}`);
-        }
+          if (matchingRow) {
+            // ✅ Extract corresponding metadata values
+            updatedMetadata[well] = {
+              ...wellMetadata,
+              negsel: matchingRow["Construct_1"] || "",
+              anchor: matchingRow["Construct_2"] || "",
+              receptor: matchingRow["Construct_3"] || "",
+            };
+          }
+        });
+  
+        return { ...plate, metadata: updatedMetadata };
       });
-  
-      return updatedPlates;
     });
   };
 
@@ -491,12 +551,6 @@ const WellPlateSelector = () => {
     <div className="well-plate-container">
       <h2>96-Well Block Metadata Helper</h2>
 
-      <div className="plate-nav">
-        <button className="action-btn" onClick={prevPlate} disabled={currentPlateIndex === 0}>← Previous Plate</button>
-        <span>Block {plates[currentPlateIndex].id}</span>
-        <button className="action-btn" onClick={nextPlate} disabled={currentPlateIndex === plates.length - 1}>Next Plate →</button>        
-      </div>
-
       <div className="plate-edit">
         <button className="action-btn" onClick={copyCurrentPlate}>Copy Current Plate</button>
         <button className="action-btn" onClick={addNewPlate}>+ Add Plate</button>
@@ -537,6 +591,7 @@ const WellPlateSelector = () => {
         onKeyDown={(e) => e.key === "Enter" && applyBulkUpdate()}
       />
 
+
       <div className="button-container">
         <button className="action-btn" onClick={applyBulkUpdate}>Apply</button>
         <button className="action-btn" onClick={clearField}>Clear</button>
@@ -551,10 +606,37 @@ const WellPlateSelector = () => {
           <Well key={wellId} wellId={wellId} isSelected={selectedWells.has(wellId)} metadata={plates[currentPlateIndex].metadata} displayedField={displayedField} />
         ))}
       </SelectableGroup>
-      <h3>Upload a CSV file with metadata:</h3>
-      <input type="file" accept=".csv" className="file-upload" onChange={handleFileUpload} />
-      <h3>Upload a CSV file from NP Plasmids Google Sheet:</h3>
-      <input type="file" accept=".csv" className="file-upload" onChange={handleCsvUpload} />
+
+      <div className="plate-nav">
+        <button className="template-btn" onClick={prevPlate} disabled={currentPlateIndex === 0}>← Previous Plate</button>
+        <span>Block {plates[currentPlateIndex].id}</span>
+        <button className="template-btn" onClick={nextPlate} disabled={currentPlateIndex === plates.length - 1}>Next Plate →</button>        
+      </div>
+
+      <div className="upload-container">
+        <div className="upload-box">
+          <h3>Upload a CSV file with metadata:</h3>
+          <input type="file" accept=".csv" className="file-upload" onChange={handleFileUpload} />
+        </div>
+
+        <div className="upload-box">
+          <h3>Upload a CSV file from NP Plasmids Google Sheet:</h3>
+          <input type="file" accept=".csv" className="file-upload" onChange={handleCsvUpload} />
+        </div>
+      </div>
+
+
+      <h3>Download Templates for Metadata:</h3>
+      <a href="/basestrain_wells.csv" download>
+        <button className="template-btn">Download Base Strain Template</button>
+      </a>
+      <a href="/spots.csv" download>
+        <button className="template-btn">Download Metadata Template</button>
+      </a>
+      <p>You can choose either tempate. basestrain template is in well format. The metadata template is in the form that is is outputted in.
+        You can also use the metadata template to upload the data back into the app.</p>
+      
+
     </div>
   );
 };
