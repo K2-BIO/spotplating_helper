@@ -1,18 +1,18 @@
 {
   "files": {
     "main.css": "/spotplating_helper/static/css/main.cd289290.css",
-    "main.js": "/spotplating_helper/static/js/main.9430a527.js",
+    "main.js": "/spotplating_helper/static/js/main.65f286f2.js",
     "static/js/977.5221152b.chunk.js": "/spotplating_helper/static/js/977.5221152b.chunk.js",
     "static/js/732.b5f08218.chunk.js": "/spotplating_helper/static/js/732.b5f08218.chunk.js",
     "static/js/453.136d8f9d.chunk.js": "/spotplating_helper/static/js/453.136d8f9d.chunk.js",
     "index.html": "/spotplating_helper/index.html",
     "main.cd289290.css.map": "/spotplating_helper/static/css/main.cd289290.css.map",
-    "main.9430a527.js.map": "/spotplating_helper/static/js/main.9430a527.js.map",
+    "main.65f286f2.js.map": "/spotplating_helper/static/js/main.65f286f2.js.map",
     "732.b5f08218.chunk.js.map": "/spotplating_helper/static/js/732.b5f08218.chunk.js.map",
     "453.136d8f9d.chunk.js.map": "/spotplating_helper/static/js/453.136d8f9d.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.cd289290.css",
-    "static/js/main.9430a527.js"
+    "static/js/main.65f286f2.js"
   ]
 }
