@@ -550,6 +550,15 @@ const WellPlateSelector = () => {
   return (
     <div className="well-plate-container">
       <h2>96-Well Block Metadata Helper</h2>
+      <p>This is a tool for making the metadata for spot plating image segmentation. First, download the NP Yeast Google Sheet as a CSV. Then upload the CSV here.
+        You can populate fields by dragging and selecting wells, clicking on the appropriate meta data button, populate the input field and press enter. </p>
+      <p>
+        You can also update the base_strains metadata by searching the strain number in the uploaded CSV.
+        The export PDF file exports images of all plates + meta data. It will cycle through all fields automatically and save as zip files.
+      </p>
+      <p>
+        Tips: You can also use the metadata template to upload the data back into the app. This might be easier than entering strains individually.  
+      </p>
 
       <input
         type="text"
@@ -625,17 +634,24 @@ const WellPlateSelector = () => {
       </div>
 
 
-      <h3>Download Templates for Metadata:</h3>
-      <a href="/basestrain_wells.csv" download>
-        <button className="template-btn">Download Base Strain Template</button>
-      </a>
-      <a href="/spots.csv" download>
-        <button className="template-btn">Download Metadata Template</button>
-      </a>
-      <p>You can choose either tempate. basestrain template is in well format. The metadata template is in the form that is is outputted in.
-        You can also use the metadata template to upload the data back into the app.</p>
-      
+      <h3>Download Templates:</h3>
+      <div className="template-buttons">
+        <a
+          href="https://github.com/K2-BIO/spotplating_helper/blob/main/public/basestrain_wells.csv"
+          target="_blank" 
+          rel="noopener noreferrer"        >
+          <button className="template-btn">Download Base Strain Template</button>
+        </a>
 
+        <a
+          href="https://github.com/K2-BIO/spotplating_helper/blob/main/public/spots.csv"
+          target="_blank" 
+          rel="noopener noreferrer"     
+        >
+          <button className="template-btn">Download Metadata Template</button>
+        </a>
+      </div>
+      
     </div>
   );
 };
