@@ -168,18 +168,19 @@ const WellPlateSelector = () => {
   
     // First, check the first few rows to detect format
     Papa.parse(file, {
-      preview: 5, // Read first 5 rows to detect format
+      preview: 5,
       skipEmptyLines: true,
       complete: (result) => {
         const firstRow = result.data[0];
-        const isOldFormat = firstRow && firstRow.includes("from_block"); // Check for known header
+        const isOldFormat = firstRow && firstRow.includes("from_block");
         console.log(`Detected format: ${isOldFormat ? "Old Format" : "New Format"}`);
   
         // Process file again with the correct format
         Papa.parse(file, {
-          header: isOldFormat, // ✅ Use headers for old format, raw data for new format
+          header: isOldFormat,
           skipEmptyLines: true,
           complete: (result) => {
+            let updatedPlates = [...plates]; // Clone existing plates
             let newPlates = [];
   
             if (isOldFormat) {
@@ -195,6 +196,7 @@ const WellPlateSelector = () => {
                   uploadedPlates[plateId] = initializePlateMetadata(); // ✅ Initialize wells
                 }
   
+                // ✅ Old format processes all metadata fields without file differentiation
                 uploadedPlates[plateId][wellId] = {
                   base_strain: row["base_strain"] || "",
                   receptor: row["receptor"] || "",
@@ -211,7 +213,16 @@ const WellPlateSelector = () => {
                 metadata: uploadedPlates[id],
               }));
             } else {
-              // ✅ Process NEW FORMAT (plate layout with "Block X")
+              // ✅ Process NEW FORMAT (grid layout with "Block X")
+              const fileName = file.name.toLowerCase();
+              const isBaseStrainFile = fileName.includes("basestrain_wells");
+              const isNanobodyFile = fileName.includes("nanobody_wells");
+  
+              if (!isBaseStrainFile && !isNanobodyFile) {
+                alert("Invalid file. Please upload 'basestrain_wells.csv' or 'nanobody_wells.csv'.");
+                return;
+              }
+  
               let currentPlate = null;
               let currentPlateId = null;
   
@@ -222,21 +233,26 @@ const WellPlateSelector = () => {
                     newPlates.push(currentPlate);
                   }
   
-                  // Extract plate number from "Block X"
                   currentPlateId = parseInt(row[0].replace("Block ", ""), 10);
-                  currentPlate = { id: currentPlateId, metadata: initializePlateMetadata() }; // ✅ Ensure all wells exist
+                  
+                  // ✅ Merge with existing plate metadata (if exists)
+                  const existingPlate = updatedPlates.find((p) => p.id === currentPlateId);
+                  currentPlate = {
+                    id: currentPlateId,
+                    metadata: existingPlate ? { ...existingPlate.metadata } : initializePlateMetadata(),
+                  };
                 } else if (currentPlate) {
                   // ✅ Process well data (rows A-H)
-                  const rowLabel = row[0]; // A, B, C, etc.
+                  const rowLabel = row[0];
                   if (rowLabel && ["A", "B", "C", "D", "E", "F", "G", "H"].includes(rowLabel)) {
                     for (let col = 1; col <= 12; col++) {
                       const wellId = `${rowLabel}${col}`;
-                      const baseStrain = row[col] ? row[col].trim() : "";
+                      const fieldValue = row[col] ? row[col].trim() : "";
   
-                      // ✅ Always keep the well, even if it's blank
+                      // ✅ Merge new data with existing metadata instead of overwriting
                       currentPlate.metadata[wellId] = {
-                        ...DEFAULT_METADATA,
-                        base_strain: baseStrain,
+                        ...currentPlate.metadata[wellId], // Keep existing data
+                        [isBaseStrainFile ? "base_strain" : "nanobody"]: fieldValue, // Update only one field
                       };
                     }
                   }
@@ -256,9 +272,26 @@ const WellPlateSelector = () => {
               )
             );
   
+            // ✅ Merge new plates into existing plates instead of replacing them
+            newPlates.forEach((newPlate) => {
+              const existingPlateIndex = updatedPlates.findIndex((p) => p.id === newPlate.id);
+              if (existingPlateIndex !== -1) {
+                // ✅ Merge metadata instead of overwriting
+                updatedPlates[existingPlateIndex] = {
+                  ...updatedPlates[existingPlateIndex],
+                  metadata: {
+                    ...updatedPlates[existingPlateIndex].metadata,
+                    ...newPlate.metadata,
+                  },
+                };
+              } else {
+                updatedPlates.push(newPlate);
+              }
+            });
+  
             // ✅ Update state if plates exist
-            if (newPlates.length > 0) {
-              setPlates(newPlates);
+            if (updatedPlates.length > 0) {
+              setPlates(updatedPlates);
               setCurrentPlateIndex(0); // Reset to first plate
             }
           },
