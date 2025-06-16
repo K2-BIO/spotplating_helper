@@ -590,8 +590,19 @@ const WellPlateSelector = () => {
         The export PDF file exports images of all plates + meta data. It will cycle through all fields automatically and save as zip files.
       </p>
       <p>
+        Program assumes all the different constructs appear in a specific order. IF your samples have a different order, make and upload your own CSV metadata file.  
+        It assumes the following:
+      </p>
+              <p>negsel: Construct_1</p>
+              <p>anchor: Construct_2</p>
+              <p>receptor: Construct_3</p>
+      <p>
         Tips: You can also use the metadata template to upload the data back into the app. This might be easier than entering strains individually.  
       </p>
+
+      <h3> Don't forget to hit SEARCH STRAIN button!</h3>
+
+      
 
       <input
         type="text"
